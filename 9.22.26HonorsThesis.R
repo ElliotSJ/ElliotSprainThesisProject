@@ -1,4 +1,4 @@
-load("C:/Users/ellio/Desktop/University/Thesis data/ICPSR_31622-V5/ICPSR_31622/DS0009/31622-0009-Data.rda")
+load("ICPSR_31622-V5/ICPSR_31622/DS0009/31622-0009-Data.rda")
 year15data <- da31622.0009
 
 da31622.0009$K6F4
