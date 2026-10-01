@@ -2,14 +2,17 @@
 load("31622-0009-Data.rda")
 year15data <- da31622.0009
 da31622.0009$K6F4
+library(tidyverse)
+library(dplyr)
 
 #Data cleaning for SES measures
-momeduclear <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$CP6EDU)) #This line replaces the entire string of CP6EDU with only the contents 1-9 after the ( and before the ). Negatives fail this check and are set to NA.
-momeducategories <- c("(1) 1 less HS","(2) 2 HS or equiv", "(3) 3 Some coll, tech", "(4) 4 coll or grad")
-momeducategorical <- momeducategories[momeduclear] #Categorical form of momeduclear, with NAs for negatives but 
+#Mother's Educational Attainment variable as a measure of SES. 
+medu_cont <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$CP6EDU)) #This line replaces the entire string of CP6EDU with only the contents 1-9 after the ( and before the ). Negatives fail this check and are set to NA.
+medu_cont_c <- medu_cont-mean(medu_cont, na.rm=TRUE)
+medu_categories <- c("(1) 1 less HS","(2) 2 HS or equiv", "(3) 3 Some coll, tech", "(4) 4 coll or grad")
+medu_cat <- medu_categories[medu_cont] #Categorical form of medu_cont_c, with NAs for negatives but 
 
 
-summary(year15dataclear, na.rm=TRUE) #Summary of Mother's Educational Attainment variable as a measure of SES. 
 householdsize <- year15data$CP6HHSIZE
 householdsize[householdsize<0] <-NA
 householdincome <- year15data$P6K57
@@ -19,37 +22,46 @@ householdincome[householdincome<0] <-NA
 familysize <- c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,18)
 familythresh <- c(16493, 19515, 25094, 29714, 33618, 38173, 42684, 50681, 50681, 50681, 50681, 50681, 50681, 50681, 50681, 50681, 50681, 50681) #From 2017 US Census data found https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-poverty-thresholds.html
 #Calculating income-to-needs as a measure of SES
-incometoneeds <- householdincome/familythresh[householdsize]
-summary(incometoneeds)
+itn <- householdincome/familythresh[householdsize]
+itn_c <- itn-mean(itn, na.rm=TRUE)
+
+#Descriptive Statistics (race, age, etc., refer to thesis document) Using ANOVA
+
+
+
+medu_itn_cat <-lm(formula = itn_c ~ medu_cat) 
+medu_itn_cont <-lm(formula = itn_c ~ medu_cont_c) 
+summary(medu_itn_cont)
+
 
 
 #Research Question 1 -  How does SES predict intimate relationship involvement in adolescents?
 #Data Cleaning
-yr15involvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F7)) #Extracts positive numeric code value for Current Relationship Involvement from string. Incidentally sets negatives to NA. 
+yr15involvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F7)) #Positive values only. 1 is yes, 2 is no
 summary(yr15involvement)
-everinvolvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F6)) #Extracts positive numeric code value for Any Previous Relationship Involvement from string. Incidentally sets negatives to NA. 
+everinvolvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F4)) #Positive values only. 1 is yes, 2 is no
 
-rq1data <- cbind.data.frame(momeduclear, incometoneeds, yr15involvement, everinvolvement)
-head(rq1data)
+rq1data <- cbind.data.frame(medu_cont_c, medu_cat, itn_c, yr15involvement, everinvolvement)
 
 #Regression on data
-currentmom <- lm(formula = yr15involvement ~ momeduclear, data = rq1data)
-currentitn <- lm(formula = yr15involvement ~ incometoneeds, data = rq1data)
-evermom <- lm(formula = everinvolvement ~ momeduclear, data = rq1data)
-everitn <- lm(formula = everinvolvement ~ incometoneeds, data = rq1data)
+m_current_cont <- lm(formula = yr15involvement ~ medu_cont_c, data = rq1data)
+itn_current <- lm(formula = yr15involvement ~ itn_c, data = rq1data)
+m_ever_cont <- lm(formula = everinvolvement ~ medu_cont_c, data = rq1data)
+itn_ever <- lm(formula = everinvolvement ~ itn_c, data = rq1data)
 
 #Mother's education attainment categorical regressions
-currentmomcat <- lm(formula = yr15involvement ~ momeducategorical, data = rq1data)
-evermomcat <- lm(formula = everinvolvement ~ momeducategorical, data = rq1data)
+m_current_cat <- lm(formula = yr15involvement ~ medu_cat, data = rq1data)
+m_ever_cat <- lm(formula = everinvolvement ~ medu_cat, data = rq1data) #Triple check all new variables. Negative values converted to NA
+
 
 #Summaries of Regressions
-summary(currentmom)
-summary(currentitn)
-summary(evermom)
-summary(everitn)
+summary(m_current_cont) #Positive correlation means LESS relationship involvement
+summary(itn_current) #Positive correlation means LESS relationship involvement
+summary(m_ever_cont) #Positive correlation means LESS relationship involvement
+summary(itn_ever) #Positive correlation means LESS relationship involvement
 
-summary(currentmomcat)
-summary(evermomcat)
+summary(m_current_cat) #Positive correlation means LESS relationship involvement
+summary(m_ever_cat) #Positive correlation means LESS relationship involvement
 
 #Research Question 2 - Among those who are in intimate relationships, is SES predictive of intimate relationship violence and relationship satisfaction?
 #Data Cleaning RQ2 dependent variables
@@ -62,35 +74,105 @@ ipvscore <- ipvqa+ipvqb+ipvqc+ipvqd #Sum of IPV measure scores. Min of 4, max of
 reverseipvscore <- 8-(ipvscore-4) #Adapted scores for reverse coding. A score of 8 is now the highest IPV score
 
 relationshipquality <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F14))
-head(relationshipquality, 30)
+reverserelationshipquality <- 6-relationshipquality
 
-rq2data <- cbind.data.frame(momeduclear, incometoneeds, ipvscore, reverseipvscore, relationshipquality)
+rq2data <- cbind.data.frame(medu_cont_c, medu_cat, itn_c, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality)
 
 #Regression on data
-ipvmom <- lm(formula = reverseipvscore ~ momeduclear, data = rq2data)
-ipvitn <- lm(formula = reverseipvscore ~ incometoneeds, data = rq2data)
-qualmom <-lm(formula = relationshipquality ~ momeduclear, data = rq2data)
-qualitn <-lm(formula = relationshipquality ~ incometoneeds, data = rq2data)
-ipvqual <-lm(formula = relationshipquality ~ reverseipvscore) #Analysis to replicate existing findings that IPV is not consistently associated with lower relationship quality
+m_ipv_cont <- lm(formula = reverseipvscore ~ medu_cont_c, data = rq2data)
+itn_ipv <- lm(formula = reverseipvscore ~ itn_c, data = rq2data)
+m_qual_cont <-lm(formula = reverserelationshipquality ~ medu_cont_c, data = rq2data)
+itn_qual <-lm(formula = reverserelationshipquality ~ itn_c, data = rq2data)
+ipv_qual <-lm(formula = reverserelationshipquality ~ reverseipvscore) #Analysis to replicate existing findings that IPV is not consistently associated with lower relationship quality
 
 #Mother's education attainment categorical regressions
-ipvmomcat <- lm(formula = reverseipvscore ~ momeducategorical, data = rq2data)
-qualmomcat <-lm(formula = relationshipquality ~ momeducategorical, data = rq2data)
+m_ipv_cat <- lm(formula = reverseipvscore ~ medu_cat, data = rq2data)
+m_qual_cat <-lm(formula = reverserelationshipquality ~ medu_cat, data = rq2data)
 
 #Summaries of Regressions
-summary(ipvmom) #Mother's educational attainment association with intimate partner violence
-summary(ipvitn) #Family income-to-needs association with intimate partner violence
-summary(qualmom) #Mother's educational attainment association with relationship quality
-summary(qualitn) #Family income-to-needs association with relationship quality
-summary(ipvqual) #Intimate partner violence association with relationship quality
+summary(m_ipv_cont) #Mother's educational attainment association with intimate partner violence
+summary(itn_ipv) #Family income-to-needs association with intimate partner violence
+summary(m_qual_cont) #Mother's educational attainment association with relationship quality
+summary(itn_qual) #Family income-to-needs association with relationship quality. Positive correlation means HIGHER relationship quality
+summary(ipv_qual) #Intimate partner violence association with relationship quality
 
-summary(ipvmomcat)
-summary(qualmomcat)
+
+summary(m_ipv_cat) #Mother's educational attainment (categorical) association with intimate partner violence
+summary(m_qual_cat)
+
+
 #Research Question 3 - How do race and parent’s marital status moderate these relationships?
-race <- ipvqd <-as.numeric(sub("^\\((-?\\d+)\\).*", "\\1", year15data$CK6ETHRACE))
-race[race<=-3] <- NA
+###race <- ipvqd <-as.numeric(sub("^\\((-?\\d+)\\).*", "\\1", year15data$CK6ETHRACE))
+###race[race<=-3] <- NA
+year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-9) -9 Not in wave"] <- NA #Set not in wave to NA
+year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-3) -3 Missing"] <- NA #Set missing to NA
+ethrace <- year15data$CK6ETHRACE
+year15data$CK6CONF2[year15data$CK6ETHRACE == "(-9) -9 Not in wave"] <- NA 
+year15data$CK6CONF2[year15data$CK6ETHRACE == "(-6) -6 Skip"] <- NA 
+year15data$CK6CONF2[year15data$CK6ETHRACE == "(-3) -3 Missing"] <- NA 
+pt_together_num <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$CP6PRELB))
+togetherstatuslist <- c(1,1,0,0,0,0,0,0)
+parenttogether <- togetherstatuslist[pt_together_num]
+rq3data <- cbind.data.frame(medu_cont_c,  medu_cat, itn_c, yr15involvement, everinvolvement, ipvscore, reverseipvscore, relationshipquality, pt_together_num, parenttogether)
+
+#Moderator regressions
+#current_m_ethrace_cat <- lm(formula = yr15involvement ~ medu_cat*ethrace, data = rq3data)
+#current_m_cohab_cat <- lm(formula = yr15involvement ~ medu_cat*parenttogether, data = rq3data)
+
+current_m_ethrace_cont <- lm(formula = yr15involvement ~ medu_cont_c*ethrace, data = rq3data)
+current_m_cohab_cont <- lm(formula = yr15involvement ~ medu_cont_c*parenttogether, data = rq3data)
+
+current_itn_ethrace <- lm(formula = yr15involvement ~ itn_c*ethrace, data = rq3data)
+current_itn_cohab <- lm(formula = yr15involvement ~ itn_c*parenttogether, data = rq3data)
+
+#ever_m_ethrace_cat <- lm(formula = everinvolvement ~ medu_cat*ethrace, data = rq3data)
+#ever_m_cohab_cat <- lm(formula = everinvolvement ~ medu_cat*parenttogether, data = rq3data)
+
+ever_m_ethrace_cont <- lm(formula = everinvolvement ~ medu_cont_c*ethrace, data = rq3data)
+ever_m_cohab_cont <- lm(formula = everinvolvement ~ medu_cont_c*parenttogether, data = rq3data)
+
+ever_itn_ethrace <- lm(formula = everinvolvement ~ itn_c*ethrace, data = rq3data)
+ever_itn_cohab <- lm(formula = everinvolvement ~ itn_c*parenttogether, data = rq3data)
+
+#ipv_m_ethrace_cat <- lm(formula = reverseipvscore ~ medu_cat*ethrace, data = rq3data)
+#ipv_m_cohab_cat <- lm(formula = reverseipvscore ~ medu_cat*parenttogether, data = rq3data)
+
+ipv_m_ethrace_cont <- lm(formula = reverseipvscore ~ medu_cont*ethrace, data = rq3data)
+ipv_m_cohab_cont <- lm(formula = reverseipvscore ~ medu_cont*parenttogether, data = rq3data)
+
+ipv_itn_ethrace <- lm(formula = reverseipvscore ~ itn_c*ethrace, data = rq3data)
+ipv_itn_cohab <- lm(formula = reverseipvscore ~ itn_c*parenttogether, data = rq3data)
+
+#qual_m_ethrace_cat <-lm(formula = relationshipquality ~ medu_cat*ethrace, data = rq3data)
+#qual_m_cohab_cat <-lm(formula = relationshipquality ~ medu_cat*parenttogether, data = rq3data)
+
+qual_m_ethrace_cont <-lm(formula = relationshipquality ~ medu_cont*ethrace, data = rq3data)
+qual_m_cohab_cont <-lm(formula = relationshipquality ~ medu_cont*parenttogether, data = rq3data)
+
+qual_itn_ethrace <-lm(formula = relationshipquality ~ itn_c*ethrace, data = rq3data)
+qual_itn_cohab <-lm(formula = relationshipquality ~ itn_c*parenttogether, data = rq3data)
 
 
+#Summary of each moderator analysis
+summary(current_m_ethrace_cont)
+summary(current_m_cohab_cont)
+summary(current_itn_ethrace)
+summary(current_itn_cohab)
+
+summary(ever_m_ethrace_cont)
+summary(ever_m_cohab_cont)
+summary(ever_itn_ethrace)
+summary(ever_itn_cohab)
+
+summary(ipv_m_ethrace)
+summary(ipv_m_cohab)
+summary(ipv_itn_ethrace)
+summary(ipv_itn_cohab)
+
+summary(qual_m_ethrace)
+summary(qual_m_cohab)
+summary(qual_itn_ethrace)
+summary(qual_itn_cohab)
 
 #Covariate tests
 
@@ -98,13 +180,12 @@ race[race<=-3] <- NA
 
 
 #Data loading checks
-head(momeduclear)
+head(medu_cont_c)
 head(householdsize)
 head(householdincome)
 length(familythresh)
 length(familysize)
-head(incometoneeds)
-head(cbind.data.frame(householdincome, householdsize, incometoneeds))
+head(itn_c)
+head(cbind.data.frame(householdincome, householdsize, itn_c))
 head(everinvolvement)
-head(race,30)
 year15data$CP6EDU
