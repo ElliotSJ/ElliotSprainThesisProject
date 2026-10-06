@@ -1,9 +1,13 @@
 #Loading Data
 load("31622-0009-Data.rda")
+load("31622-0001-Data.rda")
+year0data <- da31622.0001
 year15data <- da31622.0009
 da31622.0009$K6F4
 library(tidyverse)
 library(dplyr)
+library(ggplot2)
+library(skimr)
 
 #Data cleaning for SES measures
 #Mother's Educational Attainment variable as a measure of SES. 
@@ -26,6 +30,15 @@ itn <- householdincome/familythresh[householdsize]
 itn_c <- itn-mean(itn, na.rm=TRUE)
 
 #Descriptive Statistics (race, age, etc., refer to thesis document) Using ANOVA
+demoethrace <- year15data$CK6ETHRACE
+demoage <-year15data$CP6YAGEY
+demoedu <- year15data$CP6EDU
+demosex <- year0data$CM1BSEX
+demoage <- as.factor(demoage)
+
+demodat <- cbind.data.frame(demoethrace, demoage, demoedu, demosex)
+summary(demodat)
+
 
 
 
@@ -164,28 +177,38 @@ summary(ever_m_cohab_cont)
 summary(ever_itn_ethrace)
 summary(ever_itn_cohab)
 
-summary(ipv_m_ethrace)
-summary(ipv_m_cohab)
+summary(ipv_m_ethrace_cont)
+summary(ipv_m_cohab_cont)
 summary(ipv_itn_ethrace)
 summary(ipv_itn_cohab)
 
-summary(qual_m_ethrace)
-summary(qual_m_cohab)
+summary(qual_m_ethrace_cont)
+summary(qual_m_cohab_cont)
 summary(qual_itn_ethrace)
 summary(qual_itn_cohab)
 
 #Covariate tests
 
+#age and gender? How to do these?
 
+
+#Graphs
+ggplot(data=rq3data, aes(medu_cont, yr15involvement)) +
+  geom_point() +
+  geom_smooth(method="lm")
+ggplot(data=rq3data, aes(medu_cont, everinvolvement)) +
+  geom_point() +
+  geom_smooth(method="lm") +
+  labs(x="Mother's Education Level", y="Ever involved in a relationship", title="Relationship between mother's education level and past relationship involvement")
 
 
 #Data loading checks
-head(medu_cont_c)
-head(householdsize)
-head(householdincome)
-length(familythresh)
-length(familysize)
-head(itn_c)
-head(cbind.data.frame(householdincome, householdsize, itn_c))
-head(everinvolvement)
-year15data$CP6EDU
+#head(medu_cont_c)
+#head(householdsize)
+#head(householdincome)
+#length(familythresh)
+#length(familysize)
+#head(itn_c)
+#head(cbind.data.frame(householdincome, householdsize, itn_c))
+#head(everinvolvement)
+#year15data$CP6EDU
