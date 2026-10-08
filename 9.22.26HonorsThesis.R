@@ -29,6 +29,15 @@ familythresh <- c(16493, 19515, 25094, 29714, 33618, 38173, 42684, 50681, 50681,
 itn <- householdincome/familythresh[householdsize]
 itn_c <- itn-mean(itn, na.rm=TRUE)
 
+#Compute Factor Score/Composite measure
+composite <- rowMeans (
+  cbind( 
+    scale(rq1data$medu_cont_c), 
+    scale(rq1data$itn_c)
+  ),
+  na.rm=TRUE
+)
+
 #Descriptive Statistics (race, age, etc., refer to thesis document) Using ANOVA
 demoethrace <- year15data$CK6ETHRACE
 demoage <-year15data$CP6YAGEY
@@ -38,15 +47,20 @@ demoage <- as.factor(demoage)
 
 demodat <- cbind.data.frame(demoethrace, demoage, demoedu, demosex)
 summary(demodat)
-
-
+summary(rq3data)
+table(rq3data$yr15involvement)
+table(rq3data$everinvolvement)
+table(rq3data$reverserelationshipquality)
 
 
 medu_itn_cat <-lm(formula = itn_c ~ medu_cat) 
 medu_itn_cont <-lm(formula = itn_c ~ medu_cont_c) 
 summary(medu_itn_cont)
+comp_medu <-lm(formula = composite ~ medu_cont) 
+comp_itn <-lm(formula = composite ~ incometoneeds) 
 
-
+summary(comp_medu)
+summary(comp_itn)
 
 #Research Question 1 -  How does SES predict intimate relationship involvement in adolescents?
 #Data Cleaning
@@ -54,27 +68,15 @@ yr15involvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F7)) #P
 summary(yr15involvement)
 everinvolvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F4)) #Positive values only. 1 is yes, 2 is no
 
-rq1data <- cbind.data.frame(medu_cont_c, medu_cat, itn_c, yr15involvement, everinvolvement)
+rq1data <- cbind.data.frame(medu_cont_c, medu_cat, itn_c, yr15involvement, everinvolvement, composite)
 
 #Regression on data
-m_current_cont <- lm(formula = yr15involvement ~ medu_cont_c, data = rq1data)
-itn_current <- lm(formula = yr15involvement ~ itn_c, data = rq1data)
-m_ever_cont <- lm(formula = everinvolvement ~ medu_cont_c, data = rq1data)
-itn_ever <- lm(formula = everinvolvement ~ itn_c, data = rq1data)
-
-#Mother's education attainment categorical regressions
-m_current_cat <- lm(formula = yr15involvement ~ medu_cat, data = rq1data)
-m_ever_cat <- lm(formula = everinvolvement ~ medu_cat, data = rq1data) #Triple check all new variables. Negative values converted to NA
+comp_current <- lm(formula = yr15involvement ~ composite, data = rq1data)
+comp_ever <- lm(formula = everinvolvement ~ composite, data = rq1data)
 
 
-#Summaries of Regressions
-summary(m_current_cont) #Positive correlation means LESS relationship involvement
-summary(itn_current) #Positive correlation means LESS relationship involvement
-summary(m_ever_cont) #Positive correlation means LESS relationship involvement
-summary(itn_ever) #Positive correlation means LESS relationship involvement
-
-summary(m_current_cat) #Positive correlation means LESS relationship involvement
-summary(m_ever_cat) #Positive correlation means LESS relationship involvement
+summary(comp_current)
+summary(comp_ever)
 
 #Research Question 2 - Among those who are in intimate relationships, is SES predictive of intimate relationship violence and relationship satisfaction?
 #Data Cleaning RQ2 dependent variables
@@ -89,32 +91,20 @@ reverseipvscore <- 8-(ipvscore-4) #Adapted scores for reverse coding. A score of
 relationshipquality <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F14))
 reverserelationshipquality <- 6-relationshipquality
 
-rq2data <- cbind.data.frame(medu_cont_c, medu_cat, itn_c, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality)
+rq2data <- cbind.data.frame(medu_cont_c, medu_cat, itn_c, composite, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality)
 
 #Regression on data
-m_ipv_cont <- lm(formula = reverseipvscore ~ medu_cont_c, data = rq2data)
-itn_ipv <- lm(formula = reverseipvscore ~ itn_c, data = rq2data)
-m_qual_cont <-lm(formula = reverserelationshipquality ~ medu_cont_c, data = rq2data)
-itn_qual <-lm(formula = reverserelationshipquality ~ itn_c, data = rq2data)
-ipv_qual <-lm(formula = reverserelationshipquality ~ reverseipvscore) #Analysis to replicate existing findings that IPV is not consistently associated with lower relationship quality
+comp_ipv <- lm(formula = reverseipvscore ~ composite, data = rq2data)
+comp_qual <- lm(formula = reverserelationshipquality ~ composite, data = rq2data)
 
-#Mother's education attainment categorical regressions
-m_ipv_cat <- lm(formula = reverseipvscore ~ medu_cat, data = rq2data)
-m_qual_cat <-lm(formula = reverserelationshipquality ~ medu_cat, data = rq2data)
 
-#Summaries of Regressions
-summary(m_ipv_cont) #Mother's educational attainment association with intimate partner violence
-summary(itn_ipv) #Family income-to-needs association with intimate partner violence
-summary(m_qual_cont) #Mother's educational attainment association with relationship quality
-summary(itn_qual) #Family income-to-needs association with relationship quality. Positive correlation means HIGHER relationship quality
+
+summary(comp_ipv)
+summary(comp_qual)
 summary(ipv_qual) #Intimate partner violence association with relationship quality
+#summary(itn_qual) #Family income-to-needs association with relationship quality. Positive correlation means HIGHER relationship quality
 
-
-summary(m_ipv_cat) #Mother's educational attainment (categorical) association with intimate partner violence
-summary(m_qual_cat)
-
-
-#Research Question 3 - How do race and parent’s marital status moderate these relationships?
+#Research Question 3 - How does parent’s marital status moderate these relationships?
 ###race <- ipvqd <-as.numeric(sub("^\\((-?\\d+)\\).*", "\\1", year15data$CK6ETHRACE))
 ###race[race<=-3] <- NA
 year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-9) -9 Not in wave"] <- NA #Set not in wave to NA
@@ -126,70 +116,35 @@ year15data$CK6CONF2[year15data$CK6ETHRACE == "(-3) -3 Missing"] <- NA
 pt_together_num <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$CP6PRELB))
 togetherstatuslist <- c(1,1,0,0,0,0,0,0)
 parenttogether <- togetherstatuslist[pt_together_num]
-rq3data <- cbind.data.frame(medu_cont_c,  medu_cat, itn_c, yr15involvement, everinvolvement, ipvscore, reverseipvscore, relationshipquality, pt_together_num, parenttogether)
+
+
+
+rq3data <- cbind.data.frame(medu_cont_c,  medu_cat, itn_c, composite, yr15involvement, everinvolvement, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality, pt_together_num, parenttogether, composite)
 
 #Moderator regressions
-#current_m_ethrace_cat <- lm(formula = yr15involvement ~ medu_cat*ethrace, data = rq3data)
-#current_m_cohab_cat <- lm(formula = yr15involvement ~ medu_cat*parenttogether, data = rq3data)
 
-current_m_ethrace_cont <- lm(formula = yr15involvement ~ medu_cont_c*ethrace, data = rq3data)
-current_m_cohab_cont <- lm(formula = yr15involvement ~ medu_cont_c*parenttogether, data = rq3data)
+comp_current_cohab <- lm(formula = yr15involvement ~ composite*parenttogether, data = rq3data)
+comp_ever_cohab <- lm(formula = everinvolvement ~ composite*parenttogether, data = rq3data)
 
-current_itn_ethrace <- lm(formula = yr15involvement ~ itn_c*ethrace, data = rq3data)
-current_itn_cohab <- lm(formula = yr15involvement ~ itn_c*parenttogether, data = rq3data)
-
-#ever_m_ethrace_cat <- lm(formula = everinvolvement ~ medu_cat*ethrace, data = rq3data)
-#ever_m_cohab_cat <- lm(formula = everinvolvement ~ medu_cat*parenttogether, data = rq3data)
-
-ever_m_ethrace_cont <- lm(formula = everinvolvement ~ medu_cont_c*ethrace, data = rq3data)
-ever_m_cohab_cont <- lm(formula = everinvolvement ~ medu_cont_c*parenttogether, data = rq3data)
-
-ever_itn_ethrace <- lm(formula = everinvolvement ~ itn_c*ethrace, data = rq3data)
-ever_itn_cohab <- lm(formula = everinvolvement ~ itn_c*parenttogether, data = rq3data)
-
-#ipv_m_ethrace_cat <- lm(formula = reverseipvscore ~ medu_cat*ethrace, data = rq3data)
-#ipv_m_cohab_cat <- lm(formula = reverseipvscore ~ medu_cat*parenttogether, data = rq3data)
-
-ipv_m_ethrace_cont <- lm(formula = reverseipvscore ~ medu_cont*ethrace, data = rq3data)
-ipv_m_cohab_cont <- lm(formula = reverseipvscore ~ medu_cont*parenttogether, data = rq3data)
-
-ipv_itn_ethrace <- lm(formula = reverseipvscore ~ itn_c*ethrace, data = rq3data)
-ipv_itn_cohab <- lm(formula = reverseipvscore ~ itn_c*parenttogether, data = rq3data)
-
-#qual_m_ethrace_cat <-lm(formula = relationshipquality ~ medu_cat*ethrace, data = rq3data)
-#qual_m_cohab_cat <-lm(formula = relationshipquality ~ medu_cat*parenttogether, data = rq3data)
-
-qual_m_ethrace_cont <-lm(formula = relationshipquality ~ medu_cont*ethrace, data = rq3data)
-qual_m_cohab_cont <-lm(formula = relationshipquality ~ medu_cont*parenttogether, data = rq3data)
-
-qual_itn_ethrace <-lm(formula = relationshipquality ~ itn_c*ethrace, data = rq3data)
-qual_itn_cohab <-lm(formula = relationshipquality ~ itn_c*parenttogether, data = rq3data)
+comp_ipv_cohab <- lm(formula = reverseipvscore ~ composite*parenttogether, data = rq3data)
+comp_qual_cohab <-lm(formula = relationshipquality ~ composite*parenttogether, data = rq3data)
 
 
-#Summary of each moderator analysis
-summary(current_m_ethrace_cont)
-summary(current_m_cohab_cont)
-summary(current_itn_ethrace)
-summary(current_itn_cohab)
-
-summary(ever_m_ethrace_cont)
-summary(ever_m_cohab_cont)
-summary(ever_itn_ethrace)
-summary(ever_itn_cohab)
-
-summary(ipv_m_ethrace_cont)
-summary(ipv_m_cohab_cont)
-summary(ipv_itn_ethrace)
-summary(ipv_itn_cohab)
-
-summary(qual_m_ethrace_cont)
-summary(qual_m_cohab_cont)
-summary(qual_itn_ethrace)
-summary(qual_itn_cohab)
+summary(comp_current_cohab)
+summary(comp_ever_cohab)
+summary(comp_ipv_cohab)
+summary(comp_qual_cohab)
 
 #Covariate tests
 
 #age and gender? How to do these?
+
+#For race - make a dummy category with black as reference group. Dummy variables for all races besides reference (e.g. white/not white). Each one just compared to one group. 
+
+#Gender is just one category
+
+#Age just treated as continuous
+
 
 
 #Graphs
@@ -212,3 +167,111 @@ ggplot(data=rq3data, aes(medu_cont, everinvolvement)) +
 #head(cbind.data.frame(householdincome, householdsize, itn_c))
 #head(everinvolvement)
 #year15data$CP6EDU
+
+
+
+#Old Code
+#m_current_cont <- lm(formula = yr15involvement ~ medu_cont_c, data = rq1data)
+#itn_current <- lm(formula = yr15involvement ~ itn_c, data = rq1data)
+#m_ever_cont <- lm(formula = everinvolvement ~ medu_cont_c, data = rq1data)
+#itn_ever <- lm(formula = everinvolvement ~ itn_c, data = rq1data)
+
+#Mother's education attainment categorical regressions
+#m_current_cat <- lm(formula = yr15involvement ~ medu_cat, data = rq1data)
+#m_ever_cat <- lm(formula = everinvolvement ~ medu_cat, data = rq1data) #Triple check all new variables. Negative values converted to NA
+
+
+#Summaries of Regressions
+#summary(m_current_cont) #Positive correlation means LESS relationship involvement
+#summary(itn_current) #Positive correlation means LESS relationship involvement
+#summary(m_ever_cont) #Positive correlation means LESS relationship involvement
+#summary(itn_ever) #Positive correlation means LESS relationship involvement
+
+#summary(m_current_cat) #Positive correlation means LESS relationship involvement
+#summary(m_ever_cat) #Positive correlation means LESS relationship involvement
+
+#RQ2
+
+#m_ipv_cont <- lm(formula = reverseipvscore ~ medu_cont_c, data = rq2data)
+#itn_ipv <- lm(formula = reverseipvscore ~ itn_c, data = rq2data)
+#m_qual_cont <-lm(formula = reverserelationshipquality ~ medu_cont_c, data = rq2data)
+#itn_qual <-lm(formula = reverserelationshipquality ~ itn_c, data = rq2data)
+#ipv_qual <-lm(formula = reverserelationshipquality ~ reverseipvscore) #Analysis to replicate existing findings that IPV is not consistently associated with lower relationship quality
+
+#Mother's education attainment categorical regressions
+#m_ipv_cat <- lm(formula = reverseipvscore ~ medu_cat, data = rq2data)
+#m_qual_cat <-lm(formula = reverserelationshipquality ~ medu_cat, data = rq2data)
+
+#Summaries of Regressions
+#summary(m_ipv_cont) #Mother's educational attainment association with intimate partner violence
+#summary(itn_ipv) #Family income-to-needs association with intimate partner violence
+#summary(m_qual_cont) #Mother's educational attainment association with relationship quality
+#summary(itn_qual) #Family income-to-needs association with relationship quality. Positive correlation means HIGHER relationship quality
+
+
+
+#summary(m_ipv_cat) #Mother's educational attainment (categorical) association with intimate partner violence
+#summary(m_qual_cat)
+
+#RQ3
+
+
+#current_m_ethrace_cat <- lm(formula = yr15involvement ~ medu_cat*ethrace, data = rq3data)
+#current_m_cohab_cat <- lm(formula = yr15involvement ~ medu_cat*parenttogether, data = rq3data)
+
+#current_m_ethrace_cont <- lm(formula = yr15involvement ~ medu_cont_c*ethrace, data = rq3data)
+#current_m_cohab_cont <- lm(formula = yr15involvement ~ medu_cont_c*parenttogether, data = rq3data)
+
+#current_itn_ethrace <- lm(formula = yr15involvement ~ itn_c*ethrace, data = rq3data)
+#current_itn_cohab <- lm(formula = yr15involvement ~ itn_c*parenttogether, data = rq3data)
+
+#ever_m_ethrace_cat <- lm(formula = everinvolvement ~ medu_cat*ethrace, data = rq3data)
+#ever_m_cohab_cat <- lm(formula = everinvolvement ~ medu_cat*parenttogether, data = rq3data)
+
+#ever_m_ethrace_cont <- lm(formula = everinvolvement ~ medu_cont_c*ethrace, data = rq3data)
+#ever_m_cohab_cont <- lm(formula = everinvolvement ~ medu_cont_c*parenttogether, data = rq3data)
+
+#ever_itn_ethrace <- lm(formula = everinvolvement ~ itn_c*ethrace, data = rq3data)
+#ever_itn_cohab <- lm(formula = everinvolvement ~ itn_c*parenttogether, data = rq3data)
+
+#ipv_m_ethrace_cat <- lm(formula = reverseipvscore ~ medu_cat*ethrace, data = rq3data)
+#ipv_m_cohab_cat <- lm(formula = reverseipvscore ~ medu_cat*parenttogether, data = rq3data)
+
+#ipv_m_ethrace_cont <- lm(formula = reverseipvscore ~ medu_cont*ethrace, data = rq3data)
+#ipv_m_cohab_cont <- lm(formula = reverseipvscore ~ medu_cont*parenttogether, data = rq3data)
+
+#ipv_itn_ethrace <- lm(formula = reverseipvscore ~ itn_c*ethrace, data = rq3data)
+#ipv_itn_cohab <- lm(formula = reverseipvscore ~ itn_c*parenttogether, data = rq3data)
+
+#qual_m_ethrace_cat <-lm(formula = relationshipquality ~ medu_cat*ethrace, data = rq3data)
+#qual_m_cohab_cat <-lm(formula = relationshipquality ~ medu_cat*parenttogether, data = rq3data)
+
+#qual_m_ethrace_cont <-lm(formula = relationshipquality ~ medu_cont*ethrace, data = rq3data)
+#qual_m_cohab_cont <-lm(formula = relationshipquality ~ medu_cont*parenttogether, data = rq3data)
+
+#qual_itn_ethrace <-lm(formula = relationshipquality ~ itn_c*ethrace, data = rq3data)
+#qual_itn_cohab <-lm(formula = relationshipquality ~ itn_c*parenttogether, data = rq3data)
+
+
+#Summary of each moderator analysis
+#summary(current_m_ethrace_cont)
+#summary(current_m_cohab_cont)
+#summary(current_itn_ethrace)
+#summary(current_itn_cohab)
+
+#summary(ever_m_ethrace_cont)
+#summary(ever_m_cohab_cont)
+#summary(ever_itn_ethrace)
+#summary(ever_itn_cohab)
+
+#summary(ipv_m_ethrace_cont)
+#summary(ipv_m_cohab_cont)
+#summary(ipv_itn_ethrace)
+#summary(ipv_itn_cohab)
+
+#summary(qual_m_ethrace_cont)
+#summary(qual_m_cohab_cont)
+#summary(qual_itn_ethrace)
+#summary(qual_itn_cohab)
+
+
