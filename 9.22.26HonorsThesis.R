@@ -140,6 +140,49 @@ summary(comp_qual_cohab)
 #age and gender? How to do these?
 
 #For race - make a dummy category with black as reference group. Dummy variables for all races besides reference (e.g. white/not white). Each one just compared to one group. 
+covardata <- cbind.data.frame(medu_cont_c,  medu_cat, itn_c, composite, yr15involvement, everinvolvement, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality, pt_together_num, parenttogether, composite, ethrace, demoage, demosex)
+
+table(covardata$ethrace)
+covardata$whitecompare <- NA
+for (i in 1:nrow(covardata)) {
+  if(isTRUE(covardata$ethrace[i]=="(1) 1 White only, non-hispanic")==TRUE) {
+    covardata$whitecompare[i] <- 1
+  }
+  else {
+    covardata$whitecompare[i] <- 0
+  }
+}
+
+covardata$hisplatcompare <- NA
+for (i in 1:nrow(covardata)) {
+  if(isTRUE(covardata$ethrace[i]=="(3) 3 Hispanic/Latino")==TRUE) {
+    covardata$hisplatcompare[i] <- 1
+  }
+  else {
+    covardata$hisplatcompare[i] <- 0
+  }
+}
+
+covardata$othercompare <- NA
+for (i in 1:nrow(covardata)) {
+  if(isTRUE(covardata$ethrace[i]=="(4) 4 Other only, non-hispanic")==TRUE) {
+    covardata$othercompare[i] <- 1
+  }
+  else {
+    covardata$othercompare[i] <- 0
+  }
+}
+
+covardata$multicompare <- NA
+for (i in 1:nrow(covardata)) {
+  if(isTRUE(covardata$ethrace[i]=="(5) 5 Multi-racial, non-hispanic")==TRUE) {
+    covardata$multicompare[i] <- 1
+  }
+  else {
+    covardata$multicompare[i] <- 0
+  }
+}
+
 
 #Gender is just one category
 
