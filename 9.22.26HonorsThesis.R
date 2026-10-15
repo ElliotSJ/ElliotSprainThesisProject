@@ -161,7 +161,7 @@ summary(comp_ever)
 comp_current_cov <- lm(formula = yr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
 comp_ever_cov <- lm(formula = everinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
 summary(comp_current_cov)
-
+summary(comp_ever_cov)
 
 
 ##########################################
@@ -182,6 +182,13 @@ summary(comp_qual)
 summary(ipv_qual) #Intimate partner violence association with relationship quality
 
 
+#RQ2 Covariates
+comp_ipv_cov <- lm(formula = reverseipvscore ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_qual_cov <- lm(formula = reverserelationshipquality ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+
+summary(comp_ipv_cov)
+summary(comp_qual_cov)
+
 ##########################################
 ##########################################
 #Research Question 3 - How does parent’s marital status moderate these relationships?
@@ -194,7 +201,7 @@ comp_current_cohab <- lm(formula = yr15involvement ~ composite*parenttogether, d
 comp_ever_cohab <- lm(formula = everinvolvement ~ composite*parenttogether, data = rq3data)
 
 comp_ipv_cohab <- lm(formula = reverseipvscore ~ composite*parenttogether, data = rq3data)
-comp_qual_cohab <-lm(formula = relationshipquality ~ composite*parenttogether, data = rq3data)
+comp_qual_cohab <-lm(formula = reverserelationshipquality ~ composite*parenttogether, data = rq3data)
 
 
 summary(comp_current_cohab)
@@ -202,6 +209,16 @@ summary(comp_ever_cohab)
 summary(comp_ipv_cohab)
 summary(comp_qual_cohab)
 
+comp_current_cohab_cov <- lm(formula = yr15involvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_ever_cohab_cov <- lm(formula = everinvolvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+
+comp_ipv_cohab_cov <- lm(formula = reverseipvscore ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_qual_cohab_cov <-lm(formula = reverserelationshipquality ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+
+summary(comp_current_cohab_cov)
+summary(comp_ever_cohab_cov)
+summary(comp_ipv_cohab_cov)
+summary(comp_qual_cohab_cov)
 
 
 
