@@ -9,14 +9,34 @@ library(dplyr)
 library(ggplot2)
 library(skimr)
 
-#Data cleaning for SES measures
+##########################################
+##########################################
+#Data cleaning and setup
+##########################################
+##########################################
+
+#Descriptive Statistics (race, age, etc., refer to thesis document) Using ANOVA
+year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-9) -9 Not in wave"] <- NA #Set not in wave to NA
+year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-3) -3 Missing"] <- NA #Set missing to NA
+year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-1) -1 Refuse"] <- NA #Set refuse to NA
+demoethrace <- year15data$CK6ETHRACE
+demoage <-year15data$CP6YAGEY
+demoage[demoage == -9] <- NA
+demoage[demoage == -3] <- NA
+demoedu <- year15data$CP6EDU
+demosex <- year0data$CM1BSEX
+
+
+
+demodat <- cbind.data.frame(demoethrace, demoage, demoedu, demosex)
+
 #Mother's Educational Attainment variable as a measure of SES. 
 medu_cont <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$CP6EDU)) #This line replaces the entire string of CP6EDU with only the contents 1-9 after the ( and before the ). Negatives fail this check and are set to NA.
 medu_cont_c <- medu_cont-mean(medu_cont, na.rm=TRUE)
 medu_categories <- c("(1) 1 less HS","(2) 2 HS or equiv", "(3) 3 Some coll, tech", "(4) 4 coll or grad")
 medu_cat <- medu_categories[medu_cont] #Categorical form of medu_cont_c, with NAs for negatives but 
 
-
+#Preparing to calculate income to needs
 householdsize <- year15data$CP6HHSIZE
 householdsize[householdsize<0] <-NA
 householdincome <- year15data$P6K57
@@ -29,57 +49,36 @@ familythresh <- c(16493, 19515, 25094, 29714, 33618, 38173, 42684, 50681, 50681,
 itn <- householdincome/familythresh[householdsize]
 itn_c <- itn-mean(itn, na.rm=TRUE)
 
-#Compute Factor Score/Composite measure
+##########################################
+##########################################
+#RQ1 DATA
+##########################################
+##########################################
+
+#Relationship Involvement - RQ1 dependent variable
+yr15involvement <-as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F7)) #Positive values only. 1 is yes, 2 is no. Currently dating at year 15
+everinvolvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F4)) #Positive values only. 1 is yes, 2 is no. Has ever dated at year 15
+reverseyr15involvement <- 2-yr15involvement #Reverse coded current involvement. 0 is no, 1 is yes
+reverseeverinvolvement <- 2-everinvolvement #Reverse coded ever dating. 0 is no, 1 is yes
+
+#Computing a composite measure/factor score for mother's education and income to needs
 composite <- rowMeans (
   cbind( 
-    scale(rq1data$medu_cont_c), 
-    scale(rq1data$itn_c)
+    scale(medu_cont_c), 
+    scale(itn_c)
   ),
   na.rm=TRUE
 )
 
-#Descriptive Statistics (race, age, etc., refer to thesis document) Using ANOVA
-demoethrace <- year15data$CK6ETHRACE
-demoage <-year15data$CP6YAGEY
-demoedu <- year15data$CP6EDU
-demosex <- year0data$CM1BSEX
-demoage <- as.factor(demoage)
+rq1data <- cbind.data.frame(reverseyr15involvement, reverseeverinvolvement, composite)
 
-demodat <- cbind.data.frame(demoethrace, demoage, demoedu, demosex)
-summary(demodat)
-summary(rq3data)
-table(rq3data$yr15involvement)
-table(rq3data$everinvolvement)
-table(rq3data$reverserelationshipquality)
+##########################################
+##########################################
+#RQ2 DATA
+##########################################
+##########################################
 
-
-medu_itn_cat <-lm(formula = itn_c ~ medu_cat) 
-medu_itn_cont <-lm(formula = itn_c ~ medu_cont_c) 
-summary(medu_itn_cont)
-comp_medu <-lm(formula = composite ~ medu_cont) 
-comp_itn <-lm(formula = composite ~ incometoneeds) 
-
-summary(comp_medu)
-summary(comp_itn)
-
-#Research Question 1 -  How does SES predict intimate relationship involvement in adolescents?
-#Data Cleaning
-yr15involvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F7)) #Positive values only. 1 is yes, 2 is no
-summary(yr15involvement)
-everinvolvement <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F4)) #Positive values only. 1 is yes, 2 is no
-
-rq1data <- cbind.data.frame(medu_cont_c, medu_cat, itn_c, yr15involvement, everinvolvement, composite)
-
-#Regression on data
-comp_current <- lm(formula = yr15involvement ~ composite, data = rq1data)
-comp_ever <- lm(formula = everinvolvement ~ composite, data = rq1data)
-
-
-summary(comp_current)
-summary(comp_ever)
-
-#Research Question 2 - Among those who are in intimate relationships, is SES predictive of intimate relationship violence and relationship satisfaction?
-#Data Cleaning RQ2 dependent variables
+#Intimate Partner Violence- RQ2 dependent variable
 ipvqa <-as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F18A))
 ipvqb <-as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F18B))
 ipvqc <-as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F18C))
@@ -91,35 +90,103 @@ reverseipvscore <- 8-(ipvscore-4) #Adapted scores for reverse coding. A score of
 relationshipquality <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F14))
 reverserelationshipquality <- 6-relationshipquality
 
-rq2data <- cbind.data.frame(medu_cont_c, medu_cat, itn_c, composite, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality)
+rq2data <- cbind.data.frame(composite, reverseipvscore, reverserelationshipquality)
+
+##########################################
+##########################################
+#RQ3 DATA
+##########################################
+##########################################
+
+pt_together_num <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$CP6PRELB))
+togetherstatuslist <- c(1,1,0,0,0,0,0,0)
+parenttogether <- togetherstatuslist[pt_together_num]
+
+rq3data <- cbind.data.frame(composite, reverseyr15involvement, reverseeverinvolvement, reverseipvscore, reverserelationshipquality, demoethrace, pt_together_num, parenttogether)
+
+##########################################
+##########################################
+#COVARIATES DATA
+##########################################
+##########################################
+covardata <- cbind.data.frame(composite, yr15involvement, everinvolvement, reverseipvscore, reverserelationshipquality, pt_together_num, parenttogether, demoethrace, demoage, demosex)
+
+
+#Race categories asfor covariate comparisons. Black as the reference group
+covardata$whitecompare <- 0
+covardata$whitecompare[covardata$demoethrace == "(1) 1 White only, non-hispanic"] <- 1 #Set not in wave to NA
+
+covardata$hisplatcompare <- 0
+covardata$hisplatcompare[covardata$demoethrace == "(3) 3 Hispanic/Latino"] <- 1 
+
+covardata$othercompare <- 0
+covardata$othercompare[covardata$demoethrace == "(4) 4 Other only, non-hispanic"] <- 1
+covardata$othercompare[covardata$demoethrace == "(-2) -2 Don't know"] <- 1
+
+covardata$multicompare <- 0
+covardata$multicompare[covardata$demoethrace == "(5) 5 Multi-racial, non-hispanic"] <- 1
+
+##########################################
+##########################################
+#Correlations between independent variables in the composite
+##########################################
+##########################################
+
+
+medu_itn_cat <-lm(formula = itn_c ~ medu_cat) 
+medu_itn_cont <-lm(formula = itn_c ~ medu_cont_c) 
+summary(medu_itn_cont)
+comp_medu <-lm(formula = composite ~ medu_cont) 
+comp_itn <-lm(formula = composite ~ itn_c) 
+
+summary(comp_medu)
+summary(comp_itn)
+
+
+
+
+##########################################
+##########################################
+#Research Question 1 -  How does SES predict intimate relationship involvement in adolescents?
+##########################################
+##########################################
+
+#Regression on data
+comp_current <- lm(formula = yr15involvement ~ composite, data = rq1data)
+comp_ever <- lm(formula = everinvolvement ~ composite, data = rq1data)
+
+summary(comp_current)
+summary(comp_ever)
+
+comp_current_cov <- lm(formula = yr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_ever_cov <- lm(formula = everinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+summary(comp_current_cov)
+
+
+
+##########################################
+##########################################
+#Research Question 2 - Among those who are in intimate relationships, is SES predictive of intimate relationship violence and relationship satisfaction?
+##########################################
+##########################################
+
 
 #Regression on data
 comp_ipv <- lm(formula = reverseipvscore ~ composite, data = rq2data)
 comp_qual <- lm(formula = reverserelationshipquality ~ composite, data = rq2data)
-
+ipv_qual <- lm(formula = reverseipvscore ~ reverserelationshipquality, data = rq2data)
 
 
 summary(comp_ipv)
 summary(comp_qual)
 summary(ipv_qual) #Intimate partner violence association with relationship quality
-#summary(itn_qual) #Family income-to-needs association with relationship quality. Positive correlation means HIGHER relationship quality
 
+
+##########################################
+##########################################
 #Research Question 3 - How does parent’s marital status moderate these relationships?
-###race <- ipvqd <-as.numeric(sub("^\\((-?\\d+)\\).*", "\\1", year15data$CK6ETHRACE))
-###race[race<=-3] <- NA
-year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-9) -9 Not in wave"] <- NA #Set not in wave to NA
-year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-3) -3 Missing"] <- NA #Set missing to NA
-ethrace <- year15data$CK6ETHRACE
-year15data$CK6CONF2[year15data$CK6ETHRACE == "(-9) -9 Not in wave"] <- NA 
-year15data$CK6CONF2[year15data$CK6ETHRACE == "(-6) -6 Skip"] <- NA 
-year15data$CK6CONF2[year15data$CK6ETHRACE == "(-3) -3 Missing"] <- NA 
-pt_together_num <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$CP6PRELB))
-togetherstatuslist <- c(1,1,0,0,0,0,0,0)
-parenttogether <- togetherstatuslist[pt_together_num]
-
-
-
-rq3data <- cbind.data.frame(medu_cont_c,  medu_cat, itn_c, composite, yr15involvement, everinvolvement, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality, pt_together_num, parenttogether, composite)
+##########################################
+##########################################
 
 #Moderator regressions
 
@@ -135,58 +202,23 @@ summary(comp_ever_cohab)
 summary(comp_ipv_cohab)
 summary(comp_qual_cohab)
 
-#Covariate tests
-
-#age and gender? How to do these?
-
-#For race - make a dummy category with black as reference group. Dummy variables for all races besides reference (e.g. white/not white). Each one just compared to one group. 
-covardata <- cbind.data.frame(medu_cont_c,  medu_cat, itn_c, composite, yr15involvement, everinvolvement, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality, pt_together_num, parenttogether, composite, ethrace, demoage, demosex)
-
-table(covardata$ethrace)
-covardata$whitecompare <- NA
-for (i in 1:nrow(covardata)) {
-  if(isTRUE(covardata$ethrace[i]=="(1) 1 White only, non-hispanic")==TRUE) {
-    covardata$whitecompare[i] <- 1
-  }
-  else {
-    covardata$whitecompare[i] <- 0
-  }
-}
-
-covardata$hisplatcompare <- NA
-for (i in 1:nrow(covardata)) {
-  if(isTRUE(covardata$ethrace[i]=="(3) 3 Hispanic/Latino")==TRUE) {
-    covardata$hisplatcompare[i] <- 1
-  }
-  else {
-    covardata$hisplatcompare[i] <- 0
-  }
-}
-
-covardata$othercompare <- NA
-for (i in 1:nrow(covardata)) {
-  if(isTRUE(covardata$ethrace[i]=="(4) 4 Other only, non-hispanic")==TRUE) {
-    covardata$othercompare[i] <- 1
-  }
-  else {
-    covardata$othercompare[i] <- 0
-  }
-}
-
-covardata$multicompare <- NA
-for (i in 1:nrow(covardata)) {
-  if(isTRUE(covardata$ethrace[i]=="(5) 5 Multi-racial, non-hispanic")==TRUE) {
-    covardata$multicompare[i] <- 1
-  }
-  else {
-    covardata$multicompare[i] <- 0
-  }
-}
 
 
-#Gender is just one category
 
-#Age just treated as continuous
+#Simple Slope Analysis 
+xx <- c(-0.0233,0.0233)   #  <-- change to alter plot dims
+yy <- c(1.1632,1.3239)   #  <-- change to alter plot dims
+leg <- c(-0.0233,1.1833)   #  <-- change to alter legend location
+x <- c(-0.0233,0.0233)   #  <-- x-coords for lines
+y1 <- c(1.19,1.1908)
+y2 <- c(1.3214,1.3239)
+plot(xx,yy,type='n',font=2,font.lab=2,xlab='X',ylab='Y',main='MLR 2-Way Interaction Plot')
+lines(x,y1,lwd=3,lty=1,col=1)
+lines(x,y2,lwd=3,lty=5,col=2)
+points(x,y1,col=1,pch=16)
+points(x,y2,col=1,pch=16)
+legend(leg[1],leg[2],legend=c('CVz1(1)','CVz1(2)'),lwd=c(3,3),lty=c(1,5),col=c(1,2))
+
 
 
 
