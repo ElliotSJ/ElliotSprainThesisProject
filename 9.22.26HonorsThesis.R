@@ -7,7 +7,9 @@ da31622.0009$K6F4
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
-library(skimr)
+library(table1)
+library(gtsummary)
+library(apaTables)
 
 ##########################################
 ##########################################
@@ -168,16 +170,21 @@ summary(comp_itn)
 ##########################################
 
 #Regression on data
-comp_current <- lm(formula = yr15involvement ~ composite, data = rq1data)
-comp_ever <- lm(formula = everinvolvement ~ composite, data = rq1data)
-
+comp_current <- lm(formula = reverseyr15involvement ~ composite, data = rq1data)
+comp_ever <- lm(formula = reverseeverinvolvement ~ composite, data = rq1data)
 summary(comp_current)
 summary(comp_ever)
 
-comp_current_cov <- lm(formula = yr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
-comp_ever_cov <- lm(formula = everinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_current_cov <- lm(formula = reverseyr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_ever_cov <- lm(formula = reverseeverinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
 summary(comp_current_cov)
 summary(comp_ever_cov)
+
+#Logistic regression version 
+comp_current_cov2 <- glm(formula = reverseyr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata, family = binomial)
+comp_ever_cov2 <- glm(formula = reverseeverinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata, family = binomial)
+summary(comp_current_cov2)
+summary(comp_ever_cov2)
 
 
 ##########################################
@@ -205,6 +212,8 @@ comp_qual_cov <- lm(formula = reverserelationshipquality ~ composite + whitecomp
 summary(comp_ipv_cov)
 summary(comp_qual_cov)
 
+#What does the nonsignificance mean? 
+
 ##########################################
 ##########################################
 #Research Question 3 - How does parent’s marital status moderate these relationships?
@@ -213,8 +222,8 @@ summary(comp_qual_cov)
 
 #Moderator regressions
 
-comp_current_cohab <- lm(formula = yr15involvement ~ composite*parenttogether, data = rq3data)
-comp_ever_cohab <- lm(formula = everinvolvement ~ composite*parenttogether, data = rq3data)
+comp_current_cohab <- lm(formula = reverseyr15involvement ~ composite*parenttogether, data = rq3data)
+comp_ever_cohab <- lm(formula = reverseeverinvolvement ~ composite*parenttogether, data = rq3data)
 
 comp_ipv_cohab <- lm(formula = reverseipvscore ~ composite*parenttogether, data = rq3data)
 comp_qual_cohab <-lm(formula = reverserelationshipquality ~ composite*parenttogether, data = rq3data)
@@ -225,8 +234,8 @@ summary(comp_ever_cohab)
 summary(comp_ipv_cohab)
 summary(comp_qual_cohab)
 
-comp_current_cohab_cov <- lm(formula = yr15involvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
-comp_ever_cohab_cov <- lm(formula = everinvolvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_current_cohab_cov <- lm(formula = reverseyr15involvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_ever_cohab_cov <- lm(formula = reverseeverinvolvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
 
 comp_ipv_cohab_cov <- lm(formula = reverseipvscore ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
 comp_qual_cohab_cov <-lm(formula = reverserelationshipquality ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
@@ -252,8 +261,27 @@ points(x,y1,col=1,pch=16)
 points(x,y2,col=1,pch=16)
 legend(leg[1],leg[2],legend=c('CVz1(1)','CVz1(2)'),lwd=c(3,3),lty=c(1,5),col=c(1,2))
 
+summary(demodat)
 
-
+#Tables
+descriptivestable <- demodat %>%
+  select(demoedu, demoage, demosex, demoethrace) %>% # Select only your Y and X variables
+  tbl_summary(
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})", # Show Mean and SD for continuous vars
+      all_categorical() ~ "{n} ({p}%)"    # Show counts and percentages for categorical vars
+    ),
+    digits = all_continuous() ~ 2,        # Round to 2 decimal places
+    label = list(
+      demoedu  ~ "Mother's Education",
+      demoage   ~ "Age",
+      demosex   ~ "Sex",
+      demoethrace ~ "Race"
+    )
+  ) %>%
+  modify_header(label = "**Variable Category**")
+  modify_caption("**Table 1: Descriptive Statistics")
+print(descriptivestable)
 
 #Graphs
 ggplot(data=rq3data, aes(medu_cont, yr15involvement)) +
@@ -263,6 +291,7 @@ ggplot(data=rq3data, aes(medu_cont, everinvolvement)) +
   geom_point() +
   geom_smooth(method="lm") +
   labs(x="Mother's Education Level", y="Ever involved in a relationship", title="Relationship between mother's education level and past relationship involvement")
+
 
 
 #Data loading checks
