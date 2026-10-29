@@ -3,13 +3,13 @@ load("31622-0009-Data.rda")
 load("31622-0001-Data.rda")
 year0data <- da31622.0001
 year15data <- da31622.0009
-da31622.0009$K6F4
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(table1)
 library(gtsummary)
 library(apaTables)
+library(jtools)
 
 ##########################################
 ##########################################
@@ -17,19 +17,33 @@ library(apaTables)
 ##########################################
 ##########################################
 
-#Descriptive Statistics (race, age, etc., refer to thesis document) Using ANOVA
-year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-9) -9 Not in wave"] <- NA #Set not in wave to NA
-year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-3) -3 Missing"] <- NA #Set missing to NA
-year15data$CK6ETHRACE[year15data$CK6ETHRACE == "(-1) -1 Refuse"] <- NA #Set refuse to NA
+#Descriptive Statistics (race, age, etc., refer to thesis document) 
 demoethrace <- year15data$CK6ETHRACE
+demoethrace[demoethrace == "(-9) -9 Not in wave"] <- NA #Set not in wave to NA
+demoethrace[demoethrace == "(-3) -3 Missing"] <- NA #Set missing to NA
+demoethrace[demoethrace == "(-1) -1 Refuse"] <- NA #Set refuse to NA
 demoage <-year15data$CP6YAGEY
 demoage[demoage == -9] <- NA
 demoage[demoage == -3] <- NA
 demoedu <- year15data$CP6EDU
 demosex <- year0data$CM1BSEX
+demosex2 <- NA
+demosex2[demosex=="(1) 1 boy"] <- "Boy"
+demosex2[demosex=="(2) 2 girl"] <- "Girl"
+demosex2[demoedu == "(-9) -9 Not in wave"] <- NA
+demosex2 <- as.factor(demosex2)
 
-
+demoedu2 <- demoedu %>% dplyr::recode("(1) 1 less HS"="Less than high school", "(2) 2 HS or equiv"="High school or equivalent", "(3) 3 Some coll, tech"="Some college or technical education", "(4) 4 coll or grad"="College or graduate education")
+demoedu2[demoedu2=="(-9) -9 Not in wave"] <- NA
+demoedu2[demoedu2=="(-3) -3 Missing"] <- NA
+demoedu2 <- droplevels(demoedu2)
+demoethrace2 <- demoethrace
+demoethrace2 <- demoethrace2 %>%dplyr::recode ("(1) 1 White only, non-hispanic"="White only, non-hispanic", "(2) 2 Black/Af. American only, non-hispanic"="Black/Af. American only, non-hispanic", "(3) 3 Hispanic/Latino"="Hispanic/Latino", "(4) 4 Other only, non-hispanic"="Other only, non-hispanic", "(5) 5 Multi-racial, non-hispanic"="Multi-racial, non-hispanic", "(-2) -2 Don't know"="Don't know")
+demoethrace2 <- droplevels(demoethrace2)
+demoethrace2 <- fct_infreq(demoethrace2)
 demodat <- cbind.data.frame(demoethrace, demoage, demoedu, demosex)
+
+
 
 #Mother's Educational Attainment variable as a measure of SES. 
 medu_cont <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$CP6EDU)) #This line replaces the entire string of CP6EDU with only the contents 1-9 after the ( and before the ). Negatives fail this check and are set to NA.
@@ -261,22 +275,25 @@ points(x,y1,col=1,pch=16)
 points(x,y2,col=1,pch=16)
 legend(leg[1],leg[2],legend=c('CVz1(1)','CVz1(2)'),lwd=c(3,3),lty=c(1,5),col=c(1,2))
 
-summary(demodat)
 
+demosex2 <- as.factor(demosex2)
+demodattable$demoedu <- medu_cat
+demodattable <- cbind.data.frame(demoedu, demoedu2, demoage, demosex2, demosex, demoethrace, demoethrace2)
 #Tables
-descriptivestable <- demodat %>%
-  select(demoedu, demoage, demosex, demoethrace) %>% # Select only your Y and X variables
+descriptivestable <- demodattable %>%
+  select(demoedu2, demoage, demosex2, demoethrace2) %>% # Select only your Y and X variables
   tbl_summary(
+    missing = "no",
     statistic = list(
       all_continuous() ~ "{mean} ({sd})", # Show Mean and SD for continuous vars
       all_categorical() ~ "{n} ({p}%)"    # Show counts and percentages for categorical vars
     ),
     digits = all_continuous() ~ 2,        # Round to 2 decimal places
     label = list(
-      demoedu  ~ "Mother's Education",
+      demoedu2  ~ "Mother's Education",
       demoage   ~ "Age",
-      demosex   ~ "Sex",
-      demoethrace ~ "Race"
+      demosex2   ~ "Sex",
+      demoethrace2 ~ "Race"
     )
   ) %>%
   modify_header(label = "**Variable Category**")
@@ -284,13 +301,18 @@ descriptivestable <- demodat %>%
 print(descriptivestable)
 
 #Graphs
-ggplot(data=rq3data, aes(medu_cont, yr15involvement)) +
-  geom_point() +
-  geom_smooth(method="lm")
-ggplot(data=rq3data, aes(medu_cont, everinvolvement)) +
+ggplot(data=rq3data, aes(composite, reverseyr15involvement)) +
   geom_point() +
   geom_smooth(method="lm") +
-  labs(x="Mother's Education Level", y="Ever involved in a relationship", title="Relationship between mother's education level and past relationship involvement")
+  theme_apa()
+ggplot(data=rq3data, aes(composite, reverseeverinvolvement)) +
+  geom_smooth(method="lm") +
+  theme_apa() +
+  labs(x="SES Composite Score", y="Ever involved in a relationship", title="Relationship between SES and past relationship involvement")
+ggplot(data=rq3data, aes(composite, reverserelationshipquality)) +
+  geom_smooth(method="lm") +
+  theme_apa() +
+  labs(x="SES Composite Score", y="Relationship Quality", title="SES Composite and relationship quality")
 
 
 
