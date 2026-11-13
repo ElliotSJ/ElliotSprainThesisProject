@@ -96,6 +96,9 @@ composite <- rowMeans (
 
 rq1data <- cbind.data.frame(reverseyr15involvement, reverseeverinvolvement, composite)
 
+ncount1a <- rq1data %>% group_by(reverseyr15involvement) %>% summarise(count = n())
+ncount1b <- rq1data %>% group_by(reverseeverinvolvement) %>% summarise(count = n())
+
 ##########################################
 ##########################################
 #RQ2 DATA
@@ -112,12 +115,18 @@ ipvscore <- ipvqa+ipvqb+ipvqc+ipvqd #Sum of IPV measure scores. Min of 4, max of
 reverseipvscore <- 8-(ipvscore-4) 
 #Number of IPV behaviors reported. A score of 8 is now the max IPV score. 0 is the min
 
-
 relationshipquality <- as.numeric(sub("^\\((\\d+)\\).*", "\\1", year15data$K6F14))
 reverserelationshipquality <- 6-relationshipquality
 #Self reported relationship quality from 1-5. 1 is the lowest, 5 is the highest
 
 rq2data <- cbind.data.frame(composite, reverseipvscore, reverserelationshipquality)
+rq2data$ipvtf <- rq2data$reverseipvscore>=1
+rq2data$ipvbin <- NA
+rq2data$ipvbin[rq2data$ipvtf==TRUE] <- 1
+rq2data$ipvbin[rq2data$ipvtf==FALSE] <- 0
+
+ncount2a <- rq2data %>% group_by(reverseipvscore) %>% summarise(count = n())
+ncount2b <- rq2data %>% group_by(reverserelationshipquality) %>% summarise(count = n())
 
 ##########################################
 ##########################################
@@ -132,6 +141,10 @@ parenttogether <- togetherstatuslist[pt_together_num]
 
 rq3data <- cbind.data.frame(composite, reverseyr15involvement, reverseeverinvolvement, reverseipvscore, reverserelationshipquality, demoethrace, pt_together_num, parenttogether)
 
+ncount3a <- rq3data %>% group_by(parenttogether*reverseyr15involvement) %>% summarise(count = n())
+ncount3b <- rq3data %>% group_by(parenttogether*reverseeverinvolvement) %>% summarise(count = n())
+ncount3c <- rq3data %>% group_by(parenttogether*reverseipvscore) %>% summarise(count = n())
+ncount3d <- rq3data %>% group_by(parenttogether*reverserelationshipquality) %>% summarise(count = n())
 ##########################################
 ##########################################
 #COVARIATES DATA
@@ -157,6 +170,7 @@ covardata$othercompare[is.na(covardata$demoethrace)] <- NA
 covardata$multicompare <- 0
 covardata$multicompare[covardata$demoethrace == "(5) 5 Multi-racial, non-hispanic"] <- 1
 covardata$multicompare[is.na(covardata$demoethrace)] <- NA 
+
 
 ##########################################
 ##########################################
@@ -212,16 +226,17 @@ summary(comp_ever_cov2)
 comp_ipv <- lm(formula = reverseipvscore ~ composite, data = rq2data)
 comp_qual <- lm(formula = reverserelationshipquality ~ composite, data = rq2data)
 ipv_qual <- lm(formula = reverseipvscore ~ reverserelationshipquality, data = rq2data)
-
+comp_ipvbin <- lm(formula = ipvbin ~ composite, data = rq2data)
 
 summary(comp_ipv)
 summary(comp_qual)
 summary(ipv_qual) #Intimate partner violence association with relationship quality
-
+summary(comp_ipvbin)
 
 #RQ2 Covariates
 comp_ipv_cov <- lm(formula = reverseipvscore ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
 comp_qual_cov <- lm(formula = reverserelationshipquality ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+
 
 summary(comp_ipv_cov)
 summary(comp_qual_cov)
@@ -277,8 +292,8 @@ legend(leg[1],leg[2],legend=c('CVz1(1)','CVz1(2)'),lwd=c(3,3),lty=c(1,5),col=c(1
 
 
 demosex2 <- as.factor(demosex2)
-demodattable$demoedu <- medu_cat
 demodattable <- cbind.data.frame(demoedu, demoedu2, demoage, demosex2, demosex, demoethrace, demoethrace2)
+demodattable$demoedu <- medu_cat
 #Tables
 descriptivestable <- demodattable %>%
   select(demoedu2, demoage, demosex2, demoethrace2) %>% # Select only your Y and X variables
@@ -300,9 +315,8 @@ descriptivestable <- demodattable %>%
   modify_caption("**Table 1: Descriptive Statistics")
 print(descriptivestable)
 
-#Graphs
+#Graphs 
 ggplot(data=rq3data, aes(composite, reverseyr15involvement)) +
-  geom_point() +
   geom_smooth(method="lm") +
   theme_apa()
 ggplot(data=rq3data, aes(composite, reverseeverinvolvement)) +
@@ -313,6 +327,10 @@ ggplot(data=rq3data, aes(composite, reverserelationshipquality)) +
   geom_smooth(method="lm") +
   theme_apa() +
   labs(x="SES Composite Score", y="Relationship Quality", title="SES Composite and relationship quality")
+ggplot(data=rq2data, aes(composite, reverseipvscore)) +
+  geom_smooth(method="lm") +
+  theme_apa() +
+  labs(x="SES Composite Score", y="IPV Score", title="SES Composite and intimate partner violence")
 
 
 
