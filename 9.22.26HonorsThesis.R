@@ -32,6 +32,9 @@ demosex2[demosex=="(1) 1 boy"] <- "Boy"
 demosex2[demosex=="(2) 2 girl"] <- "Girl"
 demosex2[demoedu == "(-9) -9 Not in wave"] <- NA
 demosex2 <- as.factor(demosex2)
+demosex3 <- NA
+demosex3[demosex2=="Boy"] <- 1
+demosex3[demosex2=="Girl"] <- 0
 
 demoedu2 <- demoedu %>% dplyr::recode("(1) 1 less HS"="Less than high school", "(2) 2 HS or equiv"="High school or equivalent", "(3) 3 Some coll, tech"="Some college or technical education", "(4) 4 coll or grad"="College or graduate education")
 demoedu2[demoedu2=="(-9) -9 Not in wave"] <- NA
@@ -150,7 +153,7 @@ ncount3d <- rq3data %>% group_by(parenttogether*reverserelationshipquality) %>% 
 #COVARIATES DATA
 ##########################################
 ##########################################
-covardata <- cbind.data.frame(composite, yr15involvement, everinvolvement, reverseipvscore, reverserelationshipquality, pt_together_num, parenttogether, demoethrace, demoage, demosex)
+covardata <- cbind.data.frame(composite, yr15involvement, everinvolvement, reverseipvscore, reverserelationshipquality, pt_together_num, parenttogether, demoethrace, demoage, demosex3)
 
 
 #Race categories asfor covariate comparisons. Black as the reference group
@@ -199,20 +202,20 @@ summary(comp_itn)
 
 #Regression on data
 comp_current <- lm(formula = reverseyr15involvement ~ composite, data = rq1data)
-comp_ever <- lm(formula = reverseeverinvolvement ~ composite, data = rq1data)
+#comp_ever <- lm(formula = reverseeverinvolvement ~ composite, data = rq1data)
 summary(comp_current)
-summary(comp_ever)
+#summary(comp_ever)
 
-comp_current_cov <- lm(formula = reverseyr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
-comp_ever_cov <- lm(formula = reverseeverinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_current_cov <- lm(formula = reverseyr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex3 + demoage, data = covardata)
+#comp_ever_cov <- lm(formula = reverseeverinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
 summary(comp_current_cov)
-summary(comp_ever_cov)
+#summary(comp_ever_cov)
 
 #Logistic regression version 
-comp_current_cov2 <- glm(formula = reverseyr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata, family = binomial)
-comp_ever_cov2 <- glm(formula = reverseeverinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata, family = binomial)
+comp_current_cov2 <- glm(formula = reverseyr15involvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex3 + demoage, data = covardata, family = binomial)
+#comp_ever_cov2 <- glm(formula = reverseeverinvolvement ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata, family = binomial)
 summary(comp_current_cov2)
-summary(comp_ever_cov2)
+#summary(comp_ever_cov2)
 
 
 ##########################################
@@ -234,8 +237,8 @@ summary(ipv_qual) #Intimate partner violence association with relationship quali
 summary(comp_ipvbin)
 
 #RQ2 Covariates
-comp_ipv_cov <- lm(formula = reverseipvscore ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
-comp_qual_cov <- lm(formula = reverserelationshipquality ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_ipv_cov <- lm(formula = reverseipvscore ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex3 + demoage, data = covardata)
+comp_qual_cov <- lm(formula = reverserelationshipquality ~ composite + whitecompare + hisplatcompare + othercompare + multicompare + demosex3 + demoage, data = covardata)
 
 
 summary(comp_ipv_cov)
@@ -252,25 +255,25 @@ summary(comp_qual_cov)
 #Moderator regressions
 
 comp_current_cohab <- lm(formula = reverseyr15involvement ~ composite*parenttogether, data = rq3data)
-comp_ever_cohab <- lm(formula = reverseeverinvolvement ~ composite*parenttogether, data = rq3data)
+#comp_ever_cohab <- lm(formula = reverseeverinvolvement ~ composite*parenttogether, data = rq3data)
 
 comp_ipv_cohab <- lm(formula = reverseipvscore ~ composite*parenttogether, data = rq3data)
 comp_qual_cohab <-lm(formula = reverserelationshipquality ~ composite*parenttogether, data = rq3data)
 
 
 summary(comp_current_cohab)
-summary(comp_ever_cohab)
+#summary(comp_ever_cohab)
 summary(comp_ipv_cohab)
 summary(comp_qual_cohab)
 
 comp_current_cohab_cov <- lm(formula = reverseyr15involvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
-comp_ever_cohab_cov <- lm(formula = reverseeverinvolvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+#comp_ever_cohab_cov <- lm(formula = reverseeverinvolvement ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
 
-comp_ipv_cohab_cov <- lm(formula = reverseipvscore ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
-comp_qual_cohab_cov <-lm(formula = reverserelationshipquality ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex + demoage, data = covardata)
+comp_ipv_cohab_cov <- lm(formula = reverseipvscore ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex3 + demoage, data = covardata)
+comp_qual_cohab_cov <-lm(formula = reverserelationshipquality ~ composite*parenttogether + whitecompare + hisplatcompare + othercompare + multicompare + demosex3 + demoage, data = covardata)
 
 summary(comp_current_cohab_cov)
-summary(comp_ever_cohab_cov)
+#summary(comp_ever_cohab_cov)
 summary(comp_ipv_cohab_cov)
 summary(comp_qual_cohab_cov)
 
