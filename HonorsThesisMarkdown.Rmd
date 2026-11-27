@@ -196,38 +196,6 @@ ncount3c <- rq3data %>% group_by(parenttogether*reverseipvscore) %>% summarise(c
 ncount3d <- rq3data %>% group_by(parenttogether*reverserelationshipquality) %>% summarise(count = n())
 ```
 
-```{r}
-covardata$whitecompare <- 0
-covardata$whitecompare[covardata$demoethrace == "(1) 1 White only, non-hispanic"] <- 1 #Set not in wave to NA
-covardata$whitecompare[is.na(covardata$demoethrace)] <- NA 
-
-whitecompare <- 0
-whitecompare[covardata$demoethrace == "(1) 1 White only, non-hispanic"] <- 1 #Set not in wave to NA
-whitecompare[is.na(covardata$demoethrace)] <- NA 
-
-covardata$hisplatcompare <- 0
-covardata$hisplatcompare[covardata$demoethrace == "(3) 3 Hispanic/Latino"] <- 1 
-covardata$hisplatcompare[is.na(covardata$demoethrace)] <- NA 
-
-covardata$othercompare <- 0
-covardata$othercompare[covardata$demoethrace == "(4) 4 Other only, non-hispanic"] <- 1
-covardata$othercompare[covardata$demoethrace == "(-2) -2 Don't know"] <- 1
-covardata$othercompare[is.na(covardata$demoethrace)] <- NA 
-
-covardata$multicompare <- 0
-covardata$multicompare[covardata$demoethrace == "(5) 5 Multi-racial, non-hispanic"] <- 1
-covardata$multicompare[is.na(covardata$demoethrace)] <- NA 
-
-```
-```
-
-
-##Whole Data Frame
-```{r}
-rqalldata <- cbind.data.frame(da31622.0009$IDNUM, demoage, demoedu, demoedu2, demoethrace, demoethrace2, demosex, demosex2, demosex3, householdincome, householdsize, itn, itn_c, medu_cat, medu_cont, medu_cont_c, composite, yr15involvement, reverseyr15involvement, everinvolvement, reverseeverinvolvement, ipvqa, ipvqb, ipvqc, ipvqd, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality, parenttogether, pt_together_num, whitecompare, hisplatcompare, othercompare, multicompare)
-```
-
-
 ##COVARIATES DATA
 
 #Creating Data Frame
@@ -238,9 +206,33 @@ covardata <- cbind.data.frame(da31622.0009$IDNUM, composite, yr15involvement, ev
 
 #Race categories for covariate comparisons. Black as the reference group
 
+
 ```{r}
+covardata$whitecompare <- 0
+covardata$whitecompare[covardata$demoethrace == "(1) 1 White only, non-hispanic"] <- 1 #Set not in wave to NA
+covardata$whitecompare[is.na(covardata$demoethrace)] <- NA 
 
+whitecompare <- covardata$whitecompare
 
+covardata$hisplatcompare <- 0
+covardata$hisplatcompare[covardata$demoethrace == "(3) 3 Hispanic/Latino"] <- 1 
+covardata$hisplatcompare[is.na(covardata$demoethrace)] <- NA 
+
+hisplatcompare <- covardata$hisplatcompare
+
+covardata$othercompare <- 0
+covardata$othercompare[covardata$demoethrace == "(4) 4 Other only, non-hispanic"] <- 1
+covardata$othercompare[covardata$demoethrace == "(-2) -2 Don't know"] <- 1
+covardata$othercompare[is.na(covardata$demoethrace)] <- NA 
+
+othercompare <- covardata$othercompare
+
+covardata$multicompare <- 0
+covardata$multicompare[covardata$demoethrace == "(5) 5 Multi-racial, non-hispanic"] <- 1
+covardata$multicompare[is.na(covardata$demoethrace)] <- NA 
+
+multicompare <- covardata$multicompare
+```
 
 #Correlations between independent variables in the composite
 
@@ -253,6 +245,11 @@ comp_itn <-lm(formula = composite ~ itn_c)
 
 summary(comp_medu)
 summary(comp_itn)
+```
+
+##Whole Data Frame
+```{r}
+rqalldata <- cbind.data.frame(da31622.0009$IDNUM, demoage, demoedu, demoedu2, demoethrace, demoethrace2, demosex, demosex2, demosex3, householdincome, householdsize, itn, itn_c, medu_cat, medu_cont, medu_cont_c, composite, yr15involvement, reverseyr15involvement, everinvolvement, reverseeverinvolvement, ipvqa, ipvqb, ipvqc, ipvqd, ipvscore, reverseipvscore, relationshipquality, reverserelationshipquality, parenttogether, pt_together_num, whitecompare, hisplatcompare, othercompare, multicompare)
 ```
 
 
@@ -291,12 +288,12 @@ summary(comp_current_cov2)
 comp_ipv <- lm(formula = reverseipvscore ~ composite, data = rqalldata)
 comp_qual <- lm(formula = reverserelationshipquality ~ composite, data = rqalldata)
 ipv_qual <- lm(formula = reverseipvscore ~ reverserelationshipquality, data = rqalldata)
-comp_ipvbin <- lm(formula = ipvbin ~ composite, data = rqalldata)
+#comp_ipvbin <- lm(formula = ipvbin ~ composite, data = rqalldata)
 
 summary(comp_ipv)
 summary(comp_qual)
 summary(ipv_qual) #Intimate partner violence association with relationship quality
-summary(comp_ipvbin)
+#summary(comp_ipvbin)
 ```
 
 #RQ2 Covariates
